@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         final clientsModel = Provider.of<ClientsModel>(context, listen: false);
         final webSocketServer = WebSocketServer();
-        webSocketServer.start("0.0.0.0", 8080, clientsModel: clientsModel);
+        webSocketServer.start("127.0.0.1", 8080, clientsModel: clientsModel);
 
         return MaterialApp(
           title: 'Flutter Demo',

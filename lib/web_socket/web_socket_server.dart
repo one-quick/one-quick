@@ -1,15 +1,13 @@
 import 'dart:io';
 import 'dart:async';
-
+import 'package:multicast_dns/multicast_dns.dart';
 import 'package:socket_app/utils/storage.dart';
-
 import '../models/clients_model.dart';
 
 class WebSocketServer {
   static final WebSocketServer _singleton = WebSocketServer._internal();
   HttpServer? _server;
   final Map<String, WebSocket> _clients = {};
-  late ClientsModel _clientsModel;
   factory WebSocketServer() {
     return _singleton;
   }
@@ -25,7 +23,6 @@ class WebSocketServer {
     int port, {
     required ClientsModel clientsModel,
   }) async {
-    _clientsModel = clientsModel;
     _server = await HttpServer.bind(address, port);
     print('Server bound: ${_server != null}');
     _readyCompleter.complete();
@@ -77,5 +74,26 @@ class WebSocketServer {
     } else {
       print("Client not found for IP: $ip");
     }
+  }
+
+  Future<List<InternetAddress>> discoverWebSocketServers() async {
+    const String name = "one-quick";
+    final MDnsClient client = MDnsClient();
+    await client.start();
+
+    final List<InternetAddress> availableServers = [];
+
+    await for (final PtrResourceRecord ptr in client
+        .lookup<PtrResourceRecord>(ResourceRecordQuery.serverPointer(name))) {
+      await for (final SrvResourceRecord srv
+          in client.lookup<SrvResourceRecord>(
+              ResourceRecordQuery.service(ptr.domainName))) {
+        availableServers.add(srv.target as InternetAddress);
+      }
+    }
+
+    client.stop();
+    print(availableServers);
+    return availableServers;
   }
 }
