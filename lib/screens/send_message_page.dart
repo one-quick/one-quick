@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:socket_app/utils/storage.dart';
 import 'package:socket_app/web_socket/web_socket_server.dart';
+
+import '../models/clients_model.dart';
 
 class SendMessagePage extends StatefulWidget {
   final String clientIp;
@@ -16,31 +19,15 @@ class SendMessagePage extends StatefulWidget {
 
 class _SendMessagePageState extends State<SendMessagePage> {
   final TextEditingController _textController = TextEditingController();
-  List<Map<String, dynamic>> _messages = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMessages();
-  }
-
-  Future<void> _loadMessages() async {
-    List<Map<String, dynamic>> messages = await Storage.getMessages();
-    setState(() {
-      _messages = messages.where((msg) => msg['clientIp'] == widget.clientIp).toList();
-    });
-  }
 
   void _sendMessage() {
     WebSocketServer().sendReplyTo(widget.clientIp, _textController.text);
     Storage.saveMessage(widget.clientIp, _textController.text, true);
-    setState(() {
-      _messages.add({
-        'clientIp': widget.clientIp,
-        'message': _textController.text,
-        'isFromServer': true,
-      });
-    });
+    Provider.of<ClientsModel>(context, listen: false).addMessage(
+      widget.clientIp,
+      _textController.text,
+      true,
+    );
     _textController.clear();
   }
 
@@ -48,12 +35,20 @@ class _SendMessagePageState extends State<SendMessagePage> {
     final isFromServer = messageData['isFromServer'];
     return ListTile(
       title: Text(messageData['message']),
-      leading: isFromServer ? const Icon(Icons.arrow_back) : const Icon(Icons.arrow_forward),
+      leading: isFromServer
+          ? const Icon(Icons.arrow_back)
+          : const Icon(Icons.arrow_forward),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final clientsModel = Provider.of<ClientsModel>(context);
+    print(clientsModel.messages);
+    final messages = clientsModel.messages
+        .where((msg) => msg['clientIp'] == widget.clientIp)
+        .toList();
+    print('Fetched messages: $messages');
     return Scaffold(
       appBar: AppBar(
         title: Text('Chat with ${widget.clientIp}'),
@@ -62,8 +57,8 @@ class _SendMessagePageState extends State<SendMessagePage> {
         children: [
           Expanded(
             child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) => _buildMessage(_messages[index]),
+              itemCount: messages.length,
+              itemBuilder: (context, index) => _buildMessage(messages[index]),
             ),
           ),
           Padding(

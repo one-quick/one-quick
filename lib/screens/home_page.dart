@@ -13,7 +13,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  
   @override
   Widget build(BuildContext context) {
     final clientsModel = Provider.of<ClientsModel>(context);
@@ -35,7 +34,10 @@ class _HomePageState extends State<HomePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SendMessagePage(clientIp: clientIp),
+                        builder: (context) => ChangeNotifierProvider.value(
+                          value: clientsModel,
+                          child: SendMessagePage(clientIp: clientIp),
+                        ),
                       ),
                     );
                   },

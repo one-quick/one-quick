@@ -15,11 +15,10 @@ void main() async {
   final info = NetworkInfo();
   var hostAddress = await info.getWifiIP();
   print(hostAddress);
-  final webSocketServer = WebSocketServer();
 
-  webSocketServer.start("0.0.0.0", 8080, onClientConnected: (ip) {
-    Provider.of<ClientsModel>(scaffoldKey.currentContext!, listen: false).addClient(ip);
-  });
+  runApp(
+    MyApp(scaffoldKey: scaffoldKey),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -29,15 +28,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: ChangeNotifierProvider(
-        create: (context) => ClientsModel(),
-        builder: (context, child) => HomePage(scaffoldKey: scaffoldKey),
-      ),
+    return ChangeNotifierProvider(
+      create: (context) => ClientsModel(),
+      builder: (context, child) {
+        final clientsModel = Provider.of<ClientsModel>(context, listen: false);
+        final webSocketServer = WebSocketServer();
+        webSocketServer.start("0.0.0.0", 8080, clientsModel: clientsModel);
+
+        return MaterialApp(
+          title: 'Flutter Demo',
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+          ),
+          home: HomePage(scaffoldKey: scaffoldKey),
+        );
+      },
     );
   }
 }

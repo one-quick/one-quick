@@ -3,15 +3,13 @@ import 'dart:async';
 
 import 'package:socket_app/utils/storage.dart';
 
-typedef OnClientConnected = void Function(String ipAddress);
-typedef OnClientDisconnected = void Function(String ipAddress);
-typedef OnMessageReceived = void Function(String ipAddress, String message);
+import '../models/clients_model.dart';
 
 class WebSocketServer {
   static final WebSocketServer _singleton = WebSocketServer._internal();
   HttpServer? _server;
   final Map<String, WebSocket> _clients = {};
-
+  late ClientsModel _clientsModel;
   factory WebSocketServer() {
     return _singleton;
   }
@@ -21,17 +19,13 @@ class WebSocketServer {
   final Completer<void> _readyCompleter = Completer<void>();
 
   Map<String, WebSocket> get clients => _clients;
-  OnClientDisconnected? onClientDisconnected;
-  OnMessageReceived? onMessageReceived;
 
   Future<void> start(
     String address,
     int port, {
-    required Function onClientConnected,
-    OnClientDisconnected? onClientDisconnected,
-    OnMessageReceived? onMessageReceived,
+    required ClientsModel clientsModel,
   }) async {
-    this.onMessageReceived = onMessageReceived;
+    _clientsModel = clientsModel;
     _server = await HttpServer.bind(address, port);
     print('Server bound: ${_server != null}');
     _readyCompleter.complete();
@@ -43,13 +37,13 @@ class WebSocketServer {
         String ip = request.connectionInfo?.remoteAddress.address ?? "unknown";
         _clients[ip] = socket;
         print('Client connected: $ip');
-        onClientConnected(ip);
         print(_clients);
+        clientsModel.addClient(ip);
         socket.listen(
           (message) {
             print("Message from $ip: $message");
             Storage.saveMessage(ip, message, false);
-            onMessageReceived?.call(ip, message);
+            clientsModel.addMessage(ip, message, false);
           },
           onError: (error) {
             print("Error from $ip: $error");
@@ -57,7 +51,7 @@ class WebSocketServer {
           onDone: () {
             print("Client disconnected: $ip");
             _clients.remove(ip);
-            onClientDisconnected?.call(ip);
+            clientsModel.removeClient(ip);
           },
         );
       } else {

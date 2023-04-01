@@ -4,10 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Storage {
   static const String _messagesKey = 'messages';
 
-  static Future<void> saveMessage(String clientIp, String message, bool isFromServer) async {
+  static Future<void> saveMessage(
+      String clientIp, String message, bool isFromServer) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? messagesJson = prefs.getString(_messagesKey);
-    List<dynamic> messages = messagesJson != null ? jsonDecode(messagesJson) : [];
+    List<dynamic> messages =
+        messagesJson != null ? jsonDecode(messagesJson) : [];
 
     messages.add({
       'clientIp': clientIp,
@@ -16,6 +18,8 @@ class Storage {
     });
 
     prefs.setString(_messagesKey, jsonEncode(messages));
+
+    print("message saved: $message");
   }
 
   static Future<List<Map<String, dynamic>>> getMessages() async {
