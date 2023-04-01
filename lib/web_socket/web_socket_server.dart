@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:multicast_dns/multicast_dns.dart';
-import 'package:socket_app/utils/storage.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 import '../models/clients_model.dart';
 import '../utils/advertisement.dart';
 
@@ -41,7 +41,6 @@ class WebSocketServer {
         socket.listen(
           (message) {
             print("Message from $ip: $message");
-            Storage.saveMessage(ip, message, false);
             clientsModel.addMessage(ip, message, false);
           },
           onError: (error) {
@@ -74,6 +73,7 @@ class WebSocketServer {
     WebSocket? client = _clients[ip];
     if (client != null) {
       client.add("Server reply: $message");
+      ClientsModel().addMessage(ip, message, true);
     } else {
       print("Client not found for IP: $ip");
     }
@@ -86,10 +86,20 @@ class WebSocketServer {
 
     final List<InternetAddress> availableServers = [];
 
-    await for (final PtrResourceRecord ptr in client.lookup<PtrResourceRecord>(ResourceRecordQuery.serverPointer(name))) {
-      await for (final SrvResourceRecord srv in client.lookup<SrvResourceRecord>(ResourceRecordQuery.service(ptr.domainName))) {
-        await for (final IPAddressResourceRecord ip in client.lookup<IPAddressResourceRecord>(ResourceRecordQuery.addressIPv4(srv.target))) {
-          availableServers.add(ip.address);
+    await for (final PtrResourceRecord ptr in client
+        .lookup<PtrResourceRecord>(ResourceRecordQuery.serverPointer(name))) {
+      await for (final SrvResourceRecord srv
+          in client.lookup<SrvResourceRecord>(
+              ResourceRecordQuery.service(ptr.domainName))) {
+        await for (final IPAddressResourceRecord ip
+            in client.lookup<IPAddressResourceRecord>(
+                ResourceRecordQuery.addressIPv4(srv.target))) {
+          final info = NetworkInfo();
+          var address = await info.getWifiIP() ?? "0.0.0.0";
+          print(ip.address);
+          if (ip.address.address != address) {
+            availableServers.add(ip.address);
+          }
         }
       }
     }

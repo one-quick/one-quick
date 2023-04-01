@@ -8,7 +8,7 @@ import android.util.Log
 class WebSocketServiceAdvertiser {
 
     private val TAG = "WebSocketServiceAdvertiser"
-    private val SERVICE_TYPE = "_http._tcp."
+    private val SERVICE_TYPE = "_one-quick._tcp."
     private val SERVICE_NAME = "one-quick"
     private lateinit var registrationListener: NsdManager.RegistrationListener
     private lateinit var nsdManager: NsdManager

@@ -19,23 +19,29 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => ClientsModel(),
-      builder: (context, child) {
-        return FutureBuilder<String>(
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: FutureBuilder<String>(
           future: _getHostAddress(),
           builder: (context, snapshot) {
             if (snapshot.hasData) {
-              final clientsModel = Provider.of<ClientsModel>(context, listen: false);
+              final clientsModel =
+                  Provider.of<ClientsModel>(context, listen: false);
               final webSocketServer = WebSocketServer();
-              webSocketServer.start("0.0.0.0", 8080, clientsModel: clientsModel);
-              return _buildApp(snapshot.data!);
+              webSocketServer.start("0.0.0.0", 8080,
+                  clientsModel: clientsModel);
+              return HomePage(scaffoldKey: scaffoldKey);
             } else if (snapshot.hasError) {
               return _buildErrorWidget(snapshot.error.toString());
             } else {
               return _buildLoadingWidget();
             }
           },
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -43,21 +49,6 @@ class MyApp extends StatelessWidget {
     await Permission.location.request();
     final info = NetworkInfo();
     return await info.getWifiIP() ?? "0.0.0.0";
-  }
-
-  Widget _buildApp(String hostAddress) {
-    return ChangeNotifierProvider(
-      create: (context) => ClientsModel(),
-      builder: (context, child) {
-        return MaterialApp(
-          title: 'Flutter Demo',
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-          ),
-          home: HomePage(scaffoldKey: scaffoldKey),
-        );
-      },
-    );
   }
 
   Widget _buildLoadingWidget() {

@@ -1,30 +1,39 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:socket_app/utils/storage.dart';
 
-class ClientsModel extends ChangeNotifier {
-  List<String> _clients = [];
-  List<Map<String, dynamic>> _messages = [];
+class ClientsModel with ChangeNotifier {
+  final List<String> _clients = [];
+  final StreamController<List<String>> _clientsStreamController = StreamController.broadcast();
 
   List<String> get clients => _clients;
-  List<Map<String, dynamic>> get messages => _messages;
 
-  void addClient(String clientIp) {
-    _clients.add(clientIp);
+  Stream<List<String>> get clientsStream => _clientsStreamController.stream;
+
+  void addClient(String ip) {
+    _clients.add(ip);
+    _clientsStreamController.add(_clients);
     notifyListeners();
   }
 
-  void removeClient(String clientIp) {
-    _clients.remove(clientIp);
+  void removeClient(String ip) {
+    _clients.remove(ip);
+    _clientsStreamController.add(_clients);
     notifyListeners();
   }
 
-  void addMessage(String clientIp, String message, bool isFromServer) {
-    _messages.add({
-      'clientIp': clientIp,
-      'message': message,
-      'isFromServer': isFromServer,
-    });
-    print('Message added: $message');
-    print('Current messages: $_messages');
+  Future<void> addMessage(String ip, String message, bool isFromServer) async {
+    await Storage.saveMessage(ip, message, isFromServer);
     notifyListeners();
+  }
+
+  Future<List<Map<String, dynamic>>> getMessages() async {
+    return await Storage.getMessages();
+  }
+
+  @override
+  void dispose() {
+    _clientsStreamController.close();
+    super.dispose();
   }
 }
