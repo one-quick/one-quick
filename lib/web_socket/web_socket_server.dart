@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:multicast_dns/multicast_dns.dart';
 import 'package:socket_app/utils/storage.dart';
 import '../models/clients_model.dart';
+import '../utils/advertisement.dart';
 
 class WebSocketServer {
   static final WebSocketServer _singleton = WebSocketServer._internal();
@@ -26,6 +27,7 @@ class WebSocketServer {
     _server = await HttpServer.bind(address, port);
     print('Server bound: ${_server != null}');
     _readyCompleter.complete();
+    WebSocketServiceAdvertiser.registerService(port);
     _server!.listen((HttpRequest request) async {
       if (request.uri.path == '/ws' &&
           WebSocketTransformer.isUpgradeRequest(request)) {
@@ -64,6 +66,7 @@ class WebSocketServer {
   Future<void> waitForReady() => _readyCompleter.future;
 
   void stop() async {
+    WebSocketServiceAdvertiser.unregisterService();
     await _server?.close(force: true);
   }
 
@@ -77,18 +80,17 @@ class WebSocketServer {
   }
 
   Future<List<InternetAddress>> discoverWebSocketServers() async {
-    const String name = "one-quick";
+    const String name = "_one-quick._tcp";
     final MDnsClient client = MDnsClient();
     await client.start();
 
     final List<InternetAddress> availableServers = [];
 
-    await for (final PtrResourceRecord ptr in client
-        .lookup<PtrResourceRecord>(ResourceRecordQuery.serverPointer(name))) {
-      await for (final SrvResourceRecord srv
-          in client.lookup<SrvResourceRecord>(
-              ResourceRecordQuery.service(ptr.domainName))) {
-        availableServers.add(srv.target as InternetAddress);
+    await for (final PtrResourceRecord ptr in client.lookup<PtrResourceRecord>(ResourceRecordQuery.serverPointer(name))) {
+      await for (final SrvResourceRecord srv in client.lookup<SrvResourceRecord>(ResourceRecordQuery.service(ptr.domainName))) {
+        await for (final IPAddressResourceRecord ip in client.lookup<IPAddressResourceRecord>(ResourceRecordQuery.addressIPv4(srv.target))) {
+          availableServers.add(ip.address);
+        }
       }
     }
 

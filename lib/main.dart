@@ -6,35 +6,49 @@ import 'package:socket_app/models/clients_model.dart';
 import 'package:socket_app/screens/home_page.dart';
 import 'package:socket_app/web_socket/web_socket_server.dart';
 
-void main() async {
-  final scaffoldKey = GlobalKey<ScaffoldState>();
+void main() {
   runApp(
-    MyApp(scaffoldKey: scaffoldKey),
-  );
-  await Permission.location.request();
-  final info = NetworkInfo();
-  var hostAddress = await info.getWifiIP();
-  print(hostAddress);
-
-  runApp(
-    MyApp(scaffoldKey: scaffoldKey),
+    MyApp(),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final GlobalKey<ScaffoldState> scaffoldKey;
-
-  const MyApp({required this.scaffoldKey, Key? key}) : super(key: key);
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => ClientsModel(),
       builder: (context, child) {
-        final clientsModel = Provider.of<ClientsModel>(context, listen: false);
-        final webSocketServer = WebSocketServer();
-        webSocketServer.start("127.0.0.1", 8080, clientsModel: clientsModel);
+        return FutureBuilder<String>(
+          future: _getHostAddress(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              final clientsModel = Provider.of<ClientsModel>(context, listen: false);
+              final webSocketServer = WebSocketServer();
+              webSocketServer.start("0.0.0.0", 8080, clientsModel: clientsModel);
+              return _buildApp(snapshot.data!);
+            } else if (snapshot.hasError) {
+              return _buildErrorWidget(snapshot.error.toString());
+            } else {
+              return _buildLoadingWidget();
+            }
+          },
+        );
+      },
+    );
+  }
 
+  Future<String> _getHostAddress() async {
+    await Permission.location.request();
+    final info = NetworkInfo();
+    return await info.getWifiIP() ?? "0.0.0.0";
+  }
+
+  Widget _buildApp(String hostAddress) {
+    return ChangeNotifierProvider(
+      create: (context) => ClientsModel(),
+      builder: (context, child) {
         return MaterialApp(
           title: 'Flutter Demo',
           theme: ThemeData(
@@ -43,6 +57,18 @@ class MyApp extends StatelessWidget {
           home: HomePage(scaffoldKey: scaffoldKey),
         );
       },
+    );
+  }
+
+  Widget _buildLoadingWidget() {
+    return Center(
+      child: CircularProgressIndicator(),
+    );
+  }
+
+  Widget _buildErrorWidget(String error) {
+    return Center(
+      child: Text("Error: $error"),
     );
   }
 }
