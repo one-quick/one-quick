@@ -1,16 +1,8 @@
 # socket_app
 
-A new Flutter project.
+# OneQuick
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Decentralized chat application that enables real-time communication between multiple users, file transfer and VOIP capabilities
+seamless and secure messaging experience that does not require a server at the backend
+compatible with networks created with mobile hotspots in case a Wifi router is not available
+cross platform and provide native performance
